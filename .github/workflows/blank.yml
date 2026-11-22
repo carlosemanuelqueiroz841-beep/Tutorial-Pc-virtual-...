@@ -1,36 +1,46 @@
-# This is a basic workflow to help you get started with Actions
+name: High-Performance CI
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ "main" ]
+  workflow_dispatch: # Permite execução manual para testes
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
+    # Usa a versão mais recente do Ubuntu, garantindo kernel e drivers atualizados
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    
+    # Libera espaço em disco extra (útil para builds pesados)
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Verify hardware specs
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          echo "--- CPU Info ---"
+          lscpu | grep "Model name"
+          echo "--- Memory ---"
+          free -h
+          echo "--- Disk Space ---"
+          df -h /
+
+      # Exemplo de instalação de dependências pesadas
+      - name: Setup Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+          
+      # Seu código de build/teste entra aqui
+      - name: Run Build
+        run: |
+          echo "Executando build de alta performance..."
